@@ -1,10 +1,13 @@
 import express from 'express';
-import router from './http/routes';
+import { createConnection } from 'typeorm';
+import router from './infra/http';
 
 const app = express();
 
-app.use(router);
+createConnection().then(() => {
+    app.use(router);
 
-app.listen(3333, () => {
-    console.log('Serving http://localhost:3333');
+    app.listen(3333, () => {
+        console.log('Serving http://localhost:3333');
+    });
 });
