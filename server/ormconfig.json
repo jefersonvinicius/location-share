@@ -1,13 +1,13 @@
 {    
     "type": "postgres",
     "host": "localhost",
-    "port": 5432,
+    "port": 5346,
     "username": "postgres",
-    "password": "docker",
+    "password": "locationshare123",
     "database": "locationshare",
     "entities": ["src/entities/*.ts"],
-    "migrations": ["src/infra/database/migrations/*.ts"],
+    "migrations": ["src/database/migrations/*.ts"],
     "cli": {
-        "migrationsDir": "src/infra/database/migrations/"
+        "migrationsDir": "src/database/migrations/"
     }
 }
