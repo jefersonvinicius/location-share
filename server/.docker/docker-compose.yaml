@@ -1,0 +1,10 @@
+version: "3.3"
+services:
+    databse:
+        image: postgres:13.1
+        ports: 
+            - '5346:5432'
+        environment: 
+            POSTGRES_PASSWORD: locationshare123
+        volumes: 
+            - ./dbdata:/var/lib/postgresql/data

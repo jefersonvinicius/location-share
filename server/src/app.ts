@@ -1,6 +1,6 @@
 import express from 'express';
 import { createConnection } from 'typeorm';
-import router from './infra/http';
+import router from './routes';
 
 const app = express();
 
