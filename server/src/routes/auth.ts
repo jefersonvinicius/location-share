@@ -6,7 +6,7 @@ const singupController = new SingUpController();
 const loginController = new LogInController();
 
 const authRouter = Router();
-authRouter.post('/singup', singupController.signup);
+authRouter.post('/singup', ...singupController.validators(), singupController.signup);
 authRouter.post('/login', loginController.login);
 
 export default authRouter;
