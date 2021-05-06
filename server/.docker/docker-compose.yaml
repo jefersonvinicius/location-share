@@ -1,10 +1,12 @@
 version: "3.3"
 services:
-    databse:
+    database:
         image: postgres:13.1
+        container_name: location-share-db
         ports: 
-            - '5346:5432'
+            - '5432:5432'
         environment: 
             POSTGRES_PASSWORD: locationshare123
         volumes: 
             - ./dbdata:/var/lib/postgresql/data
+            - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh

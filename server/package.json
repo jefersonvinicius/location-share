@@ -28,7 +28,6 @@
   "dependencies": {
     "bcrypt": "^5.0.0",
     "express": "^4.17.1",
-    "express-validator": "^6.9.2",
     "pg": "^8.4.2",
     "reflect-metadata": "^0.1.13",
     "typeorm": "^0.2.29"
