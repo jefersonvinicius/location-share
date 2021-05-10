@@ -3,19 +3,19 @@ import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, U
 @Entity({ name: 'users' })
 class User extends BaseEntity {
     @PrimaryGeneratedColumn()
-    id!: number;
+    id: number;
 
     @Column({ unique: true })
-    username!: string;
+    username: string;
 
     @Column()
-    password!: string;
+    password: string;
 
     @CreateDateColumn({ name: 'created_at' })
-    createdAt!: Date;
+    createdAt: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt!: Date;
+    updatedAt: Date;
 }
 
 export default User;

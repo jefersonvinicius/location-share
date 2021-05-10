@@ -6,11 +6,10 @@ class SignUpController {
     async signup(request: Request, response: Response) {
         const { username, password } = request.body;
 
-        const user = new User();
-
         const salt = await bcrypt.genSalt();
         const passwordCrypted = await bcrypt.hash(password, salt);
 
+        const user = new User();
         user.username = username;
         user.password = passwordCrypted;
 
