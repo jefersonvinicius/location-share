@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User from '@app/entities/User';
 import bcrypt from 'bcrypt';
 import * as yup from 'yup';
+import { isValidPassword } from '@app/helpers/validations';
 
 type Body = {
     username: string;
@@ -9,7 +10,14 @@ type Body = {
 };
 
 const bodySchema = yup.object().shape({
-    username: yup.string().required('username is required').min(4, 'username need have at last 4 characters'),
+    username: yup.string().required('username is required').min(4, 'username need have at least 4 characters'),
+    password: yup
+        .string()
+        .required('password is required')
+        .min(6, 'password need have at least 6 characters')
+        .test('password', 'password need have at least 1 upper case letter, 1 lower case letter and 1 digit', (value) =>
+            isValidPassword((value ?? '').trim())
+        ),
 });
 
 class SignUpController {

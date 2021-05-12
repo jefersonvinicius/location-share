@@ -15,6 +15,8 @@ describe('signup suite tests', () => {
 
         expect(response.statusCode).toBe(201);
         expect(user).toBeTruthy();
+
+        await user?.remove();
     });
     it('should get 400 HTTP code when username is invalid', async () => {
         const data = {
@@ -24,6 +26,20 @@ describe('signup suite tests', () => {
         const response = await request.post('/signup').send(data);
         expect(response.statusCode).toBe(400);
     });
-    it.todo('should get 400 HTTP code when password is invalid');
+    it('should get 400 HTTP code when password is invalid', async () => {
+        const passwordsInvalids = ['1aA#5', 'a23#56', '1#2A45', '125aa5', 'aA%dvd'];
+        const data = passwordsInvalids.map((password) => ({ username: 'any_username' + password, password }));
+
+        const promises = data.map((d) => request.post('/signup').send(d));
+        const responses = await Promise.all(promises);
+
+        expect(responses).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    statusCode: 400,
+                }),
+            ])
+        );
+    });
     it.todo('should get 409 when username already exists');
 });
