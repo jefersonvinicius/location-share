@@ -27,7 +27,10 @@ class SignUpController {
 
         const { username, password } = request.body;
 
-        const passwordHash = await bcrypt.hash(password, 10);
+        const userAlreadyExists = await User.findOne({ where: { username } });
+        if (userAlreadyExists) return response.status(209).json({ error: 'username already exists' });
+
+        const passwordHash = await bcrypt.hash(password.trim(), 10);
         const user = User.create({
             username,
             password: passwordHash,

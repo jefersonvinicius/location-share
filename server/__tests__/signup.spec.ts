@@ -41,5 +41,15 @@ describe('signup suite tests', () => {
             ])
         );
     });
-    it.todo('should get 409 when username already exists');
+    it('should get 409 when username already exists', async () => {
+        const data = { username: 'jeferson', password: '1#aA456' };
+        const user = User.create({ ...data });
+        await user.save();
+
+        const response = await request.post('/signup').send(data);
+
+        expect(response.statusCode).toBe(209);
+
+        await user.remove();
+    });
 });
