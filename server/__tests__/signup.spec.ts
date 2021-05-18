@@ -48,7 +48,7 @@ describe('signup suite tests', () => {
 
         const response = await request.post('/signup').send(data);
 
-        expect(response.statusCode).toBe(209);
+        expect(response.statusCode).toBe(409);
 
         await user.remove();
     });
