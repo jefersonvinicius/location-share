@@ -6,6 +6,7 @@
   "scripts": {
     "start:dev": "nodemon",
     "test": "jest --runInBand",
+    "typeorm": "ts-node ./node_modules/typeorm/cli.js",
     "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run",
     "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert"
   },
