@@ -2,8 +2,8 @@ import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, U
 
 @Entity({ name: 'users' })
 class User extends BaseEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({ unique: true })
     username: string;

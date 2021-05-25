@@ -1,5 +1,5 @@
 export function isValidPassword(password: string) {
-    const requirementsStats = Array(3).fill(false);
+    const requirementsStats = Array<boolean>(3).fill(false);
 
     for (let i = 0; i < password.length; i++) {
         if (password[i] === password[i].toLowerCase()) requirementsStats[0] = true;
