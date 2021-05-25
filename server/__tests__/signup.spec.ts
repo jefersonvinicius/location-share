@@ -26,8 +26,8 @@ describe('signup suite tests', () => {
         const response = await request.post('/signup').send(data);
         expect(response.statusCode).toBe(400);
     });
-    it('should get 400 HTTP code when password is invalid', async () => {
-        const passwordsInvalids = ['1aA#5', 'a23#56', '1#2A45', '125aa5', 'aA%dvd'];
+    it.only('should get 400 HTTP code when password is invalid', async () => {
+        const passwordsInvalids = ['1aA#5', 'a23#56', '1#2A45', '125aa5', 'aA%dvd', '123456'];
         const data = passwordsInvalids.map((password) => ({ username: 'any_username' + password, password }));
 
         const promises = data.map((d) => request.post('/signup').send(d));
