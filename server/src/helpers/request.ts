@@ -6,19 +6,21 @@ import path from 'path';
 
 type ParseOptions = {
     fileFieldName?: string;
+    maxFileSize?: number;
 };
 
-const DEFAULT_PARSE_OPTIONS: ParseOptions = {
-    fileFieldName: 'file',
-};
+export const DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50mb
 
 export const RequestUtils = {
-    parseMultipart<Body extends object>(request: Request, options?: ParseOptions): Promise<Body> {
-        options = Object.assign(DEFAULT_PARSE_OPTIONS, options) as ParseOptions;
+    parseMultipart<Body extends object>(request: Request, options: ParseOptions = {}): Promise<Body> {
         const { fileFieldName = 'file' } = options;
 
         return new Promise((resolve, reject) => {
-            const form = formidable({ multiples: false, uploadDir: UPLOAD_CONFIG.DIRECTORY });
+            const form = formidable({
+                multiples: false,
+                uploadDir: UPLOAD_CONFIG.DIRECTORY,
+                maxFileSize: DEFAULT_MAX_FILE_SIZE,
+            });
 
             form.parse(request, (err, fields, files) => {
                 if (err) {

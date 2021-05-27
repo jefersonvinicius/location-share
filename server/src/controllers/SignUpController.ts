@@ -6,6 +6,8 @@ import { isValidPassword } from '@app/helpers/validations';
 import { RequestUtils } from '@app/helpers/request';
 import { File } from 'formidable';
 
+export const MAX_FILE_SIZE = 2 * 1024 * 1024; // 50mb
+
 type Body = {
     username: string;
     password: string;
@@ -21,6 +23,12 @@ const bodySchema = yup.object().shape({
         .test('password', 'password need have at least 1 upper case letter, 1 lower case letter and 1 digit', (value) =>
             isValidPassword((value ?? '').trim())
         ),
+    image: yup
+        .mixed<File>()
+        .notRequired()
+        .test('image', 'Image should have less or equals than 2mb', (value) => {
+            return Boolean(!value || value.size <= MAX_FILE_SIZE);
+        }),
 });
 
 class SignUpController {

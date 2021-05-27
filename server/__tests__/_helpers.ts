@@ -1,4 +1,5 @@
 import { createConnection, getConnection, getConnectionOptions } from 'typeorm';
+import path from 'path';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();
@@ -10,4 +11,8 @@ export async function teardownDatabaseTest() {
     const connection = getConnection();
     await connection.dropDatabase();
     await connection.close();
+}
+
+export function getTestFile(filename: string) {
+    return path.resolve(__dirname, 'images', filename);
 }
