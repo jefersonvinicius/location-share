@@ -3,10 +3,13 @@ import User from '@app/entities/User';
 import bcrypt from 'bcrypt';
 import * as yup from 'yup';
 import { isValidPassword } from '@app/helpers/validations';
+import { RequestUtils } from '@app/helpers/request';
+import { File } from 'formidable';
 
 type Body = {
     username: string;
     password: string;
+    image: File | undefined;
 };
 
 const bodySchema = yup.object().shape({
@@ -22,15 +25,20 @@ const bodySchema = yup.object().shape({
 
 class SignUpController {
     signup = async (request: Request<any, any, Body>, response: Response) => {
-        const errors = await this.validateBody(request.body);
+        const body = await RequestUtils.parseMultipart<Body>(request, { fileFieldName: 'image' });
+
+        const errors = await this.validateBody(body);
         if (errors.length > 0) return response.status(400).json({ errors });
 
-        const { username, password } = request.body;
+        const { username, password } = body;
 
         const userAlreadyExists = await User.findOne({ where: { username } });
         if (userAlreadyExists) return response.status(409).json({ error: 'username already exists' });
 
         const passwordHash = await bcrypt.hash(password.trim(), 10);
+
+        if (body.image) RequestUtils.uploadFile(body.image);
+
         const user = User.create({
             username,
             password: passwordHash,
