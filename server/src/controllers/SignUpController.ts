@@ -5,6 +5,7 @@ import * as yup from 'yup';
 import { isValidPassword } from '@app/helpers/validations';
 import { RequestUtils } from '@app/helpers/request';
 import { File } from 'formidable';
+import path from 'path';
 
 export const MAX_FILE_SIZE = 2 * 1024 * 1024; // 50mb
 
@@ -50,6 +51,7 @@ class SignUpController {
         const user = User.create({
             username,
             password: passwordHash,
+            photo: body.image?.path ? path.basename(body.image.path) : null,
         });
         await user.save();
 

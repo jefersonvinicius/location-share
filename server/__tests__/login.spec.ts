@@ -12,7 +12,7 @@ describe('login suite tests', () => {
     });
     it('should get 400 when password is wrong', async () => {
         const data = { username: 'jeferson', password: '123456jVos' };
-        await request.post('/signup').send(data);
+        await request.post('/signup').field('username', data.username).field('password', data.password);
 
         const response = await request.post('/login').send({ ...data, password: 'wrong_password' });
         expect(response.statusCode).toBe(400);
@@ -22,7 +22,7 @@ describe('login suite tests', () => {
     });
     it('should get user data and JWT token when successfully logged in', async () => {
         const data = { username: 'jeferson', password: '123456jVos' };
-        await request.post('/signup').send(data);
+        await request.post('/signup').field('username', data.username).field('password', data.password);
 
         const response = await request.post('/login').send(data);
         expect(response.statusCode).toBe(200);
