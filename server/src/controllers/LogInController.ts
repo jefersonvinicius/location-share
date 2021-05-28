@@ -2,7 +2,7 @@ import User from '@app/entities/User';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { createJWTPayload } from '@app/helpers/jwt';
+import { createUserJWTPayload } from '@app/helpers/jwt';
 
 type Body = {
     username: string;
@@ -20,7 +20,7 @@ export default class LogInController {
             return response.status(400).json({ error: 'password is wrong' });
         }
 
-        const jwtPayload = createJWTPayload(userAlreadyExists.id);
+        const jwtPayload = createUserJWTPayload(userAlreadyExists.id);
         const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, { expiresIn: '7d' });
 
         return response.json({ user: { id: userAlreadyExists.id, username: userAlreadyExists.username }, token });
