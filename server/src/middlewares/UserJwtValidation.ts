@@ -1,5 +1,5 @@
 import { verifyUserJWT } from '@app/helpers/jwt';
-import { RequestWithUserJWT } from '@app/types';
+import { RequestUserJWT } from '@app/types';
 import { NextFunction, Request, Response } from 'express';
 
 export default class UserJWTValidation {
@@ -10,7 +10,7 @@ export default class UserJWTValidation {
         try {
             const token = authorization.replace('Bearer ', '');
             const decoded = verifyUserJWT(token);
-            (request as RequestWithUserJWT).jwt = { userId: decoded.userId };
+            (request as RequestUserJWT).jwt = { userId: decoded.userId };
             next();
         } catch (error) {
             return response.status(400).json({ error: error.message });
