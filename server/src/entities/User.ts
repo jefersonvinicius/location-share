@@ -29,9 +29,13 @@ class User extends BaseEntity {
     @UpdateDateColumn({ name: 'updated_at' })
     updatedAt: Date;
 
-    @ManyToMany(() => User)
-    @JoinTable()
-    friends: User[];
+    // @ManyToMany(() => User)
+    // @JoinTable({ name: 'friendships' })
+    // friends: User[];
+
+    // @ManyToMany(() => User)
+    // @JoinTable({ name: 'friendships_requests' })
+    // friendshipsRequests: User[];
 }
 
 export default User;
