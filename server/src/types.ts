@@ -5,7 +5,8 @@ export type RequestUserJWT = Request & {
     jwt?: UserJWTPayload;
 };
 
-export enum FriendshipStatus {
+export enum FriendshipRequestStatus {
     Pending = 'pending',
     Accepted = 'accepted',
+    Rejected = 'rejected',
 }

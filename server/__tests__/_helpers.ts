@@ -3,6 +3,7 @@ import path from 'path';
 import User from '@app/entities/User';
 import bcrypt from 'bcrypt';
 import faker from 'faker';
+import { generateUserJWT } from '@app/helpers/jwt';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();
@@ -27,6 +28,11 @@ export async function createUser() {
 
 export function createAuthorizationHeader(jwtToken: string) {
     return { field: 'Authorization', value: `Bearer ${jwtToken}` };
+}
+
+export function createAuthorizationHeaderToUser(userId: string) {
+    const jwt = generateUserJWT(userId);
+    return createAuthorizationHeader(jwt);
 }
 
 export function getTestFile(filename: string) {

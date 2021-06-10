@@ -22,6 +22,11 @@ export class CreateFriendshipsRequestsTable1623238407720 implements MigrationInt
                         type: 'varchar',
                     },
                     {
+                        name: 'status',
+                        type: 'varchar',
+                        default: "'pending'",
+                    },
+                    {
                         name: 'created_at',
                         type: 'timestamp',
                         default: 'now()',

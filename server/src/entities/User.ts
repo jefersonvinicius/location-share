@@ -29,9 +29,9 @@ class User extends BaseEntity {
     @UpdateDateColumn({ name: 'updated_at' })
     updatedAt: Date;
 
-    // @ManyToMany(() => User)
-    // @JoinTable({ name: 'friendships' })
-    // friends: User[];
+    @ManyToMany(() => User)
+    @JoinTable({ name: 'friendships', joinColumn: { name: 'user_id' }, inverseJoinColumn: { name: 'friend_id' } })
+    friends: User[];
 
     // @ManyToMany(() => User)
     // @JoinTable({ name: 'friendships_requests' })

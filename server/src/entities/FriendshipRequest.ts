@@ -11,6 +11,9 @@ export class FriendshipRequest extends BaseEntity {
     @Column({ name: 'friend_id' })
     friendId: string;
 
+    @Column()
+    status: string;
+
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
 }
