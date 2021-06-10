@@ -10,6 +10,6 @@ const requestFriendController = new RequestFriendController();
 const acceptFriendshipController = new AcceptFriendshipController();
 
 router.post('/friendships/:possibleFriendId', userJWTValidation.execute, requestFriendController.handle);
-router.post('/friendship/:friendshipRequestId', userJWTValidation.execute, acceptFriendshipController.handle);
+router.post('/friendships/:friendshipRequestId/accept', userJWTValidation.execute, acceptFriendshipController.handle);
 
 export default router;
