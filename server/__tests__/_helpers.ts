@@ -4,6 +4,8 @@ import User from '@app/entities/User';
 import bcrypt from 'bcrypt';
 import faker from 'faker';
 import { generateUserJWT } from '@app/helpers/jwt';
+import { FriendshipRequest } from '@app/entities/FriendshipRequest';
+import { FriendshipRequestStatus } from '@app/types';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();
@@ -24,6 +26,16 @@ export async function createUser() {
     });
     await user.save();
     return user;
+}
+
+export async function createAndSaveAFriendshipRequest(user: User, friend: User) {
+    const result = FriendshipRequest.create({
+        userId: user.id,
+        friendId: friend.id,
+        status: FriendshipRequestStatus.Pending,
+    });
+    await result.save();
+    return result;
 }
 
 export function createAuthorizationHeader(jwtToken: string) {

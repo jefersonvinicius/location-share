@@ -4,7 +4,7 @@ import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import { createUserJWTPayload, generateUserJWT } from '@app/helpers/jwt';
 import { FriendshipRequestStatus } from '@app/types';
 import supertest from 'supertest';
-import { createUser, createAuthorizationHeader, createAuthorizationHeaderToUser } from './_helpers';
+import { createUser, createAuthorizationHeaderToUser, createAndSaveAFriendshipRequest } from './_helpers';
 
 const request = supertest(app);
 
@@ -37,7 +37,9 @@ describe('Suite tests for friendships requests', () => {
         const user2 = await createUser();
         const header = createAuthorizationHeaderToUser(user.id);
 
-        await request.post(`/friendships/1/accept`).set(header.field, header.value);
+        const newFriendshipRequest = await createAndSaveAFriendshipRequest(user, user2);
+
+        await request.post(`/friendships/${newFriendshipRequest.id}/accept`).set(header.field, header.value);
 
         const friendshipRequest = await FriendshipRequest.findOne({ where: { userId: user.id, friendId: user2.id } });
         expect(friendshipRequest).toBeTruthy();
@@ -48,6 +50,25 @@ describe('Suite tests for friendships requests', () => {
 
         const friendshipInverted = await Friendship.findOne({ where: { userId: user2.id, friendId: user.id } });
         expect(friendshipInverted).toBeTruthy();
+
+        await friendshipRequest?.remove();
+        await friendship?.remove();
+        await friendshipInverted?.remove();
+        await user.remove();
+        await user2.remove();
+    });
+    it('should get 403 when jwt token userId is different of friendship request userId', async () => {
+        const user = await createUser();
+        const user2 = await createUser();
+        const header = createAuthorizationHeaderToUser('any_user_id');
+
+        const newFriendshipRequest = await createAndSaveAFriendshipRequest(user, user2);
+
+        const response = await request
+            .post(`/friendships/${newFriendshipRequest.id}/accept`)
+            .set(header.field, header.value);
+
+        expect(response.statusCode).toBe(403);
 
         await user.remove();
         await user2.remove();
