@@ -2,11 +2,11 @@ import Friendship from '@app/entities/Friendship';
 import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import { FriendshipRequestStatus, RequestUserJWT } from '@app/types';
 import { Response } from 'express';
+import { getManager } from 'typeorm';
 
 export default class AcceptFriendshipController {
     async handle(request: RequestUserJWT, response: Response) {
         const { friendshipRequestId } = request.params;
-        console.log('friendship request id: ', friendshipRequestId);
 
         const friendshipRequest = await FriendshipRequest.findOne(friendshipRequestId);
         if (!friendshipRequest) return response.status(404).json({ message: 'friendship request not found' });
@@ -19,11 +19,13 @@ export default class AcceptFriendshipController {
             { userId: friendshipRequest.friendId, friendId: request.jwt?.userId },
         ]);
 
-        const savePromises = friendships.map((f) => f.save());
-        await Promise.all(savePromises);
+        await getManager().transaction(async (transactionEntityManager) => {
+            const savePromises = friendships.map((f) => transactionEntityManager.save(f));
+            await Promise.all(savePromises);
 
-        friendshipRequest.status = FriendshipRequestStatus.Accepted;
-        await friendshipRequest.save();
+            friendshipRequest.status = FriendshipRequestStatus.Accepted;
+            await transactionEntityManager.save(friendshipRequest);
+        });
 
         return response.sendStatus(200);
     }
