@@ -83,5 +83,47 @@ describe('Suite tests for friendships requests', () => {
 
         await user.remove();
     });
-    it.todo('should reject friendship request');
+    it('should reject friendship request', async () => {
+        const user = await createUser();
+        const user2 = await createUser();
+        const header = createAuthorizationHeaderToUser(user.id);
+
+        const newFriendshipRequest = await createAndSaveAFriendshipRequest(user, user2);
+
+        await request.post(`/friendships/${newFriendshipRequest.id}/reject`).set(header.field, header.value);
+
+        const friendshipRequest = await FriendshipRequest.findOne({ where: { userId: user.id, friendId: user2.id } });
+        expect(friendshipRequest).toBeTruthy();
+        expect(friendshipRequest?.status).toBe(FriendshipRequestStatus.Rejected);
+
+        await friendshipRequest?.remove();
+        await user.remove();
+        await user2.remove();
+    });
+    it('should get 403 to reject friendship request when jwt token userId is different of friendship request userId', async () => {
+        const user = await createUser();
+        const user2 = await createUser();
+        const header = createAuthorizationHeaderToUser('any_user_id');
+
+        const newFriendshipRequest = await createAndSaveAFriendshipRequest(user, user2);
+
+        const response = await request
+            .post(`/friendships/${newFriendshipRequest.id}/reject`)
+            .set(header.field, header.value);
+
+        expect(response.statusCode).toBe(403);
+
+        await user.remove();
+        await user2.remove();
+    });
+    it('should get 404 http code to reject friendship request when it not exists', async () => {
+        const user = await createUser();
+        const header = createAuthorizationHeaderToUser(user.id);
+
+        const response = await request.post(`/friendships/666/reject`).set(header.field, header.value);
+
+        expect(response.statusCode).toBe(404);
+
+        await user.remove();
+    });
 });
