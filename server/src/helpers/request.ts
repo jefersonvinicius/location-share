@@ -1,7 +1,7 @@
-import formidable, { Fields, File, Files } from 'formidable';
 import { UPLOAD_CONFIG } from '@app/config/upload';
-import fs from 'fs';
 import { Request } from 'express';
+import formidable, { File } from 'formidable';
+import fs from 'fs';
 import path from 'path';
 
 type ParseOptions = {
@@ -42,6 +42,13 @@ export const RequestUtils = {
         fs.renameSync(file.path, fullPath);
         file.path = fullPath;
         return file;
+    },
+    usePaginationParams(request: Request) {
+        const page = Number(request.params.page ?? '0');
+        const perPage = Number(request.params.per_page ?? '10');
+        const offset = page * perPage;
+
+        return { page, perPage, offset };
     },
 };
 
