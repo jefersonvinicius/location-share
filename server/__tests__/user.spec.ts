@@ -7,7 +7,7 @@ import { createAuthorizationHeaderToUser, createUser } from './_helpers';
 const request = supertest(app);
 
 describe('User suite tests', () => {
-    it('get user friendships', async () => {
+    it('should get user friendships', async () => {
         const user = await createUser();
         const headerUser = createAuthorizationHeaderToUser(user.id);
         const friend = await createUser();
@@ -16,9 +16,7 @@ describe('User suite tests', () => {
         await request.post(`/friendships/${friend.id}`).set(headerUser.field, headerUser.value);
         const friendshipRequest = await FriendshipRequest.findOne({ where: { userId: user.id, friendId: friend.id } });
 
-        const r = await request
-            .post(`/friendships/${friendshipRequest?.id}/accept`)
-            .set(friendHeader.field, friendHeader.value);
+        await request.post(`/friendships/${friendshipRequest?.id}/accept`).set(friendHeader.field, friendHeader.value);
 
         const response = await request.get(`/users/${user.id}/friendships`).set(headerUser.field, headerUser.value);
 
@@ -33,5 +31,19 @@ describe('User suite tests', () => {
             total: 1,
         });
     });
-    it.todo('get user friendships requests pending');
+    it('should get 403 http code when jwt userId is different than request param', async () => {
+        const user = await createUser();
+        const headerUser = createAuthorizationHeaderToUser(user.id);
+        const friend = await createUser();
+        const friendHeader = createAuthorizationHeaderToUser(friend.id);
+
+        await request.post(`/friendships/${friend.id}`).set(headerUser.field, headerUser.value);
+        const friendshipRequest = await FriendshipRequest.findOne({ where: { userId: user.id, friendId: friend.id } });
+        await request.post(`/friendships/${friendshipRequest?.id}/accept`).set(friendHeader.field, friendHeader.value);
+
+        const response = await request.get(`/users/${user.id}/friendships`).set(friendHeader.field, friendHeader.value);
+
+        expect(response.statusCode).toBe(403);
+    });
+    it.todo('should get user friendships requests pending');
 });

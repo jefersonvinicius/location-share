@@ -13,6 +13,8 @@ export default class GetUserFriendshipsController {
         const user = await User.findOne(userId);
         if (!user) return response.status(404).json({ message: 'user not found' });
 
+        if (user.id !== request.jwt?.userId) return response.status(403).json({ message: 'forbidden' });
+
         const { perPage, offset } = RequestUtils.usePaginationParams(request);
 
         const total = await Friendship.count({ where: { userId } });
