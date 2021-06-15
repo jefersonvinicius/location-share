@@ -11,12 +11,12 @@ export default class AcceptFriendshipController {
         const friendshipRequest = await FriendshipRequest.findOne(friendshipRequestId);
         if (!friendshipRequest) return response.status(404).json({ message: 'friendship request not found' });
 
-        if (request.jwt?.userId !== friendshipRequest.userId)
+        if (request.jwt?.userId !== friendshipRequest.friendId)
             return response.status(403).json({ message: 'forbidden' });
 
         const friendships = Friendship.create([
-            { userId: request.jwt?.userId, friendId: friendshipRequest.friendId },
-            { userId: friendshipRequest.friendId, friendId: request.jwt?.userId },
+            { userId: friendshipRequest.userId, friendId: friendshipRequest.friendId },
+            { userId: friendshipRequest.friendId, friendId: friendshipRequest.userId },
         ]);
 
         await getManager().transaction(async (transactionEntityManager) => {

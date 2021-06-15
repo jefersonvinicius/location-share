@@ -11,7 +11,7 @@ export default class RejectFriendshipController {
         const friendshipRequest = await FriendshipRequest.findOne(friendshipRequestId);
         if (!friendshipRequest) return response.status(404).json({ message: 'friendship request not found' });
 
-        if (request.jwt?.userId !== friendshipRequest.userId)
+        if (request.jwt?.userId !== friendshipRequest.friendId)
             return response.status(403).json({ message: 'forbidden' });
 
         friendshipRequest.status = FriendshipRequestStatus.Rejected;

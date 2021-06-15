@@ -57,7 +57,7 @@ describe('Suite tests for friendships requests', () => {
         await user.remove();
         await user2.remove();
     });
-    it('should get 403 when jwt token userId is different of friendship request userId', async () => {
+    it('should get 403 when jwt token userId is different of friendship request friendId', async () => {
         const user = await createUser();
         const user2 = await createUser();
         const header = createAuthorizationHeaderToUser('any_user_id');

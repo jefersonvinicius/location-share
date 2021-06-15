@@ -1,4 +1,5 @@
 import Friendship from '@app/entities/Friendship';
+import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import User from '@app/entities/User';
 import { RequestUtils } from '@app/helpers/request';
 import { RequestUserJWT } from '@app/types';
