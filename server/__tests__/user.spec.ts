@@ -45,5 +45,30 @@ describe('User suite tests', () => {
 
         expect(response.statusCode).toBe(403);
     });
-    it.todo('should get user friendships requests pending');
+    it('should get user friendships requests pending', async () => {
+        const user = await createUser();
+        const headerUser = createAuthorizationHeaderToUser(user.id);
+        const possibleFriend = await createUser();
+
+        await request.post(`/friendships/${possibleFriend.id}`).set(headerUser.field, headerUser.value);
+
+        const response = await request.get(`/users/${user.id}/friendships/pending`).set(headerUser.field, headerUser.value);
+
+        expect(response.body).toMatchObject({
+            pending: expect.arrayContaining([
+                expect.objectContaining({
+                    id: expect.any(Number),
+                    userId: user.id,
+                    friendId: possibleFriend.id,
+                    status: 'pending',
+                    createdAt: expect.any(String),
+                    friend: expect.objectContaining({
+                        id: possibleFriend.id,
+                        username: possibleFriend.username
+                    }),
+                }),
+            ]),
+            total: 1,
+        });
+    });
 });

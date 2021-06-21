@@ -5,9 +5,11 @@ import {
     Entity,
     JoinTable,
     ManyToMany,
+    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
+import { FriendshipRequest } from './FriendshipRequest';
 
 @Entity({ name: 'users' })
 class User extends BaseEntity {
@@ -33,9 +35,8 @@ class User extends BaseEntity {
     @JoinTable({ name: 'friendships', joinColumn: { name: 'user_id' }, inverseJoinColumn: { name: 'friend_id' } })
     friends: User[];
 
-    // @ManyToMany(() => User)
-    // @JoinTable({ name: 'friendships_requests' })
-    // friendshipsRequests: User[];
+    @OneToMany(() => FriendshipRequest, (request) => request.user)
+    friendshipRequests: FriendshipRequest[]
 }
 
 export default User;
