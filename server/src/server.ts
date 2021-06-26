@@ -22,19 +22,42 @@ type User = {
     username: string;
 };
 
+type Coords = {
+    latitude: number;
+    longitude: number;
+};
+
+type SocketsCollection = {
+    [key: string]: {
+        user: User;
+        coords: Coords | null;
+    };
+};
+
+type NewUserPayload = {
+    user: User;
+    coords: Coords;
+};
+
+const sockets: SocketsCollection = {};
+
 io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
     socket.on(SocketEvents.NewLocation, handleNewLocation);
-
     socket.on('disconnect', handleUserDisconnect);
 
-    function handleNewLocation(location: any) {
-        console.log('NEW LOCATION: ', location);
+    function handleNewLocation(coords: Coords) {
+        console.log(`new location of ${sockets[socket.id].user.username}: `, coords);
+        sockets[socket.id] = { ...sockets[socket.id], coords };
+        const payload = { userId: sockets[socket.id].user.id, coords, lastTimeUpdatedCoords: Date.now() };
+        socket.broadcast.emit(SocketEvents.NewLocation, payload);
     }
 
-    function handleNewUser(user: User) {
-        console.log(`${user.username} connected`);
-        socket.broadcast.emit(SocketEvents.NewUser, user);
+    function handleNewUser(payload: NewUserPayload) {
+        sockets[socket.id] = payload;
+        console.log(`${payload.user.username} connected`);
+        console.log(payload);
+        socket.broadcast.emit(SocketEvents.NewUser, { ...payload, lastTimeUpdatedCoords: Date.now() });
     }
 
     function handleUserDisconnect() {
