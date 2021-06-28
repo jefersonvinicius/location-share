@@ -9,6 +9,8 @@ enum SocketEvents {
     NewLocation = 'new-location',
     NewUser = 'new-user',
     UserDisconnected = 'user-disconnected',
+
+    PreviousUsers = 'previous-users',
 }
 
 const io = new Server(httpServer, {
@@ -31,6 +33,7 @@ type SocketsCollection = {
     [key: string]: {
         user: User;
         coords: Coords | null;
+        lastTimeUpdatedCoords?: number;
     };
 };
 
@@ -48,21 +51,27 @@ io.on('connection', (socket: Socket) => {
 
     function handleNewLocation(coords: Coords) {
         console.log(`new location of ${sockets[socket.id].user.username}: `, coords);
-        sockets[socket.id] = { ...sockets[socket.id], coords };
-        const payload = { userId: sockets[socket.id].user.id, coords, lastTimeUpdatedCoords: Date.now() };
+        sockets[socket.id] = { ...sockets[socket.id], coords, lastTimeUpdatedCoords: Date.now() };
+        const payload = {
+            userId: sockets[socket.id].user.id,
+            coords,
+            lastTimeUpdatedCoords: sockets[socket.id].lastTimeUpdatedCoords,
+        };
         socket.broadcast.emit(SocketEvents.NewLocation, payload);
     }
 
     function handleNewUser(payload: NewUserPayload) {
-        sockets[socket.id] = payload;
         console.log(`${payload.user.username} connected`);
-        console.log(payload);
+
+        socket.emit(SocketEvents.PreviousUsers, sockets);
+        sockets[socket.id] = { ...payload, lastTimeUpdatedCoords: Date.now() };
         socket.broadcast.emit(SocketEvents.NewUser, { ...payload, lastTimeUpdatedCoords: Date.now() });
     }
 
     function handleUserDisconnect() {
         console.log(`${socket.id} disconnected`);
-        socket.broadcast.emit(SocketEvents.UserDisconnected, { socketId: socket.id });
+        socket.broadcast.emit(SocketEvents.UserDisconnected, { socketIdDisconnected: socket.id });
+        delete sockets[socket.id];
     }
 });
 
