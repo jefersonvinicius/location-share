@@ -9,8 +9,9 @@ enum SocketEvents {
     NewLocation = 'new-location',
     NewUser = 'new-user',
     UserDisconnected = 'user-disconnected',
-
     PreviousUsers = 'previous-users',
+    RequestShareLocation = 'request-share-location',
+    ReceiveShareLocationRequest = 'receive-share-location-request',
 }
 
 const io = new Server(httpServer, {
@@ -42,11 +43,17 @@ type NewUserPayload = {
     coords: Coords;
 };
 
+type ShareLocationRequest = {
+    socketIdSource: string;
+    socketIdRequested: string;
+};
+
 const sockets: SocketsCollection = {};
 
 io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
     socket.on(SocketEvents.NewLocation, handleNewLocation);
+    socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
     socket.on('disconnect', handleUserDisconnect);
 
     function handleNewLocation(coords: Coords) {
@@ -58,6 +65,15 @@ io.on('connection', (socket: Socket) => {
             lastTimeUpdatedCoords: sockets[socket.id].lastTimeUpdatedCoords,
         };
         socket.broadcast.emit(SocketEvents.NewLocation, payload);
+    }
+
+    function handleRequestShareLocation(request: ShareLocationRequest) {
+        console.log(request);
+        console.log(sockets);
+        const socketSource = sockets[request.socketIdSource];
+        const socketRequested = sockets[request.socketIdRequested];
+        console.log(`${socketSource.user.username} request to ${socketRequested.user.username}`);
+        socket.to(request.socketIdRequested).emit(SocketEvents.ReceiveShareLocationRequest, socketSource.user);
     }
 
     function handleNewUser(payload: NewUserPayload) {
