@@ -52,6 +52,7 @@ type ShareLocationRequest = {
 };
 
 const sockets: SocketsCollection = {};
+const locationShareRooms = {};
 
 io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
@@ -74,7 +75,7 @@ io.on('connection', (socket: Socket) => {
     function handleRequestShareLocation(request: ShareLocationRequest) {
         const socketSource = sockets[request.socketIdSource];
         const socketRequested = sockets[request.socketIdRequested];
-        console.log(`${socketSource.user.username} request to ${socketRequested.user.username}`);
+        console.log(`${socketSource.user.username} request to ${socketRequested.user.username} share your location`);
         socket.to(request.socketIdRequested).emit(SocketEvents.ReceiveShareLocationRequest, socketSource.user);
     }
 
@@ -89,7 +90,19 @@ io.on('connection', (socket: Socket) => {
         const socketSource = sockets[socketIdSource];
         const socketAccept = sockets[socket.id];
         console.log(`${socketAccept.user.username} accept share location with ${socketSource.user.username}`);
-        socket.to(socketIdSource).emit(SocketEvents.StartShareLocation, socketAccept.user);
+
+        const roomName = createLocationShareRoomName(socketSource.user, socketAccept.user);
+        socket.join(roomName);
+        io.sockets.sockets.get(socketIdSource)?.join(roomName);
+
+        socket.to(socketIdSource).emit(SocketEvents.StartShareLocation, {
+            roomName,
+            user: socketAccept.user,
+        });
+        socket.emit(SocketEvents.StartShareLocation, {
+            roomName,
+            user: socketSource.user,
+        });
     }
 
     function handleUserDisconnect() {
@@ -98,6 +111,14 @@ io.on('connection', (socket: Socket) => {
         delete sockets[socket.id];
     }
 });
+
+function createLocationShareRoomName(user1: User, user2: User) {
+    return `${normalizeUsername(user1.username)}-${user1.id}-${normalizeUsername(user2.username)}-${user2.id}`;
+
+    function normalizeUsername(username: string) {
+        return username.toLowerCase().split(' ').join('-');
+    }
+}
 
 async function bootstrap() {
     await createConnection();
