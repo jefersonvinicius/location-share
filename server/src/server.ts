@@ -15,6 +15,7 @@ enum SocketEvents {
     AcceptShareLocationRequest = 'accept-share-location-request',
     StartShareLocation = 'start-share-location',
     RejectShareLocationRequest = 'reject-share-location-request',
+    NewLocationWhileSharing = 'new-location-while-sharing',
 }
 
 const io = new Server(httpServer, {
@@ -26,6 +27,7 @@ const io = new Server(httpServer, {
 type User = {
     id: string;
     username: string;
+    room?: string;
 };
 
 type Coords = {
@@ -51,6 +53,11 @@ type ShareLocationRequest = {
     socketIdRequested: string;
 };
 
+type NewShareLocationData = {
+    room: string;
+    coords: Coords;
+};
+
 const sockets: SocketsCollection = {};
 const locationShareRooms = {};
 
@@ -59,6 +66,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewLocation, handleNewLocation);
     socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
     socket.on(SocketEvents.AcceptShareLocationRequest, handleAcceptShareLocationRequest);
+    socket.on(SocketEvents.NewLocationWhileSharing, handleNewLocationWhileSharing);
     socket.on('disconnect', handleUserDisconnect);
 
     function handleNewLocation(coords: Coords) {
@@ -102,6 +110,14 @@ io.on('connection', (socket: Socket) => {
         socket.emit(SocketEvents.StartShareLocation, {
             roomName,
             user: socketSource.user,
+        });
+    }
+
+    function handleNewLocationWhileSharing(data: NewShareLocationData) {
+        console.log('Receive new location from:', sockets[socket.id].user.username);
+        io.to(data.room).emit(SocketEvents.NewLocationWhileSharing, {
+            userId: sockets[socket.id].user.id,
+            coords: data.coords,
         });
     }
 
