@@ -16,6 +16,7 @@ enum SocketEvents {
     StartShareLocation = 'start-share-location',
     RejectShareLocationRequest = 'reject-share-location-request',
     NewLocationWhileSharing = 'new-location-while-sharing',
+    StopLocationSharing = 'stop-location-sharing',
 }
 
 const io = new Server(httpServer, {
@@ -58,6 +59,10 @@ type NewShareLocationData = {
     coords: Coords;
 };
 
+type StopLocationSharingPayload = {
+    room: string;
+};
+
 const sockets: SocketsCollection = {};
 const locationShareRooms = {};
 
@@ -67,6 +72,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
     socket.on(SocketEvents.AcceptShareLocationRequest, handleAcceptShareLocationRequest);
     socket.on(SocketEvents.NewLocationWhileSharing, handleNewLocationWhileSharing);
+    socket.on(SocketEvents.StopLocationSharing, handleStopLocationSharing);
     socket.on('disconnect', handleUserDisconnect);
 
     function handleNewLocation(coords: Coords) {
@@ -119,6 +125,16 @@ io.on('connection', (socket: Socket) => {
             userId: sockets[socket.id].user.id,
             coords: data.coords,
         });
+    }
+
+    function handleStopLocationSharing(data: StopLocationSharingPayload) {
+        console.log('Stop location sharing:');
+        const roomToStop = io.sockets.adapter.rooms.get(data.room);
+
+        for (const socket of Array.from(roomToStop ?? [])) {
+            console.log('Stopping location share to', socket);
+            io.sockets.to(socket).emit(SocketEvents.StopLocationSharing);
+        }
     }
 
     function handleUserDisconnect() {
