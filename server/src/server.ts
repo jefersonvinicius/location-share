@@ -73,6 +73,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.AcceptShareLocationRequest, handleAcceptShareLocationRequest);
     socket.on(SocketEvents.NewLocationWhileSharing, handleNewLocationWhileSharing);
     socket.on(SocketEvents.StopLocationSharing, handleStopLocationSharing);
+    socket.on(SocketEvents.RejectShareLocationRequest, handleRejectLocationRequest);
     socket.on('disconnect', handleUserDisconnect);
 
     function handleNewLocation(coords: Coords) {
@@ -135,6 +136,13 @@ io.on('connection', (socket: Socket) => {
             console.log('Stopping location share to', socket);
             io.sockets.to(socket).emit(SocketEvents.StopLocationSharing);
         }
+    }
+
+    function handleRejectLocationRequest(socketIdSource: string) {
+        const socketSource = sockets[socketIdSource];
+        const socketReject = sockets[socket.id];
+        console.log(`${socketReject.user.username} reject ${socketSource.user.username} request`);
+        io.sockets.sockets.get(socketIdSource)?.emit(SocketEvents.RejectShareLocationRequest);
     }
 
     function handleUserDisconnect() {
