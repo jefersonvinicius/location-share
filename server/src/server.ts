@@ -17,6 +17,7 @@ enum SocketEvents {
     RejectShareLocationRequest = 'reject-share-location-request',
     NewLocationWhileSharing = 'new-location-while-sharing',
     StopLocationSharing = 'stop-location-sharing',
+    ShareLocationHasStarted = 'share-location-has-started',
 }
 
 const io = new Server(httpServer, {
@@ -117,6 +118,9 @@ io.on('connection', (socket: Socket) => {
         socket.emit(SocketEvents.StartShareLocation, {
             roomName,
             user: socketSource.user,
+        });
+        socket.broadcast.emit(SocketEvents.ShareLocationHasStarted, {
+            usersID: [socketAccept.user.id, socketSource.user.id],
         });
     }
 
