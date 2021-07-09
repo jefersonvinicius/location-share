@@ -5,7 +5,7 @@ import { Server, Socket } from 'socket.io';
 
 const httpServer = http.createServer(app);
 
-enum SocketEvents {
+export enum SocketEvents {
     NewLocation = 'new-location',
     NewUser = 'new-user',
     UserDisconnected = 'user-disconnected',
@@ -21,7 +21,7 @@ enum SocketEvents {
     ShareLocationHasStopped = 'share-location-has-stopped',
 }
 
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
     cors: {
         origin: '*',
     },
