@@ -69,24 +69,29 @@ type StopLocationSharingPayload = {
 
 class SocketsCollection {
     sockets: SocketsCollectionData;
+
     constructor() {
         this.sockets = {};
     }
 
-    get data() {
-        return this.sockets;
+    get(socketId: string) {
+        return this.sockets[socketId];
     }
 
-    get(socketId: string) {
-        return this.data[socketId];
+    getMany(...socketIds: string[]) {
+        return socketIds.map((id) => this.sockets[id]);
     }
 
     setSocket(socketId: string, data: Partial<SocketCollectionItem>) {
-        this.data[socketId] = { ...this.data[socketId], ...data };
+        this.sockets[socketId] = { ...this.sockets[socketId], ...data };
     }
 
     remove(socketId: string) {
-        delete this.data[socketId];
+        delete this.sockets[socketId];
+    }
+
+    toJSON() {
+        return this.sockets;
     }
 }
 
@@ -166,6 +171,10 @@ io.on('connection', (socket: Socket) => {
             console.log('Stopping location share to', socketID);
             io.sockets.to(socketID).emit(SocketEvents.StopLocationSharing);
         }
+
+        socket.broadcast.emit(SocketEvents.ShareLocationHasStopped, {
+            usersID: sockets.getMany(...socketsID).map((s) => s.user.id),
+        });
     }
 
     function handleRejectLocationRequest(socketIdSource: string) {
