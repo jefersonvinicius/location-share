@@ -9,7 +9,7 @@ export enum SocketEvents {
     NewLocation = 'new-location',
     NewUser = 'new-user',
     UserDisconnected = 'user-disconnected',
-    AroundUsers = 'around-users',
+    PreviousAroundUsers = 'previous-around-users',
     RequestShareLocation = 'request-share-location',
     ReceiveShareLocationRequest = 'receive-share-location-request',
     AcceptShareLocationRequest = 'accept-share-location-request',
@@ -33,6 +33,7 @@ export type Coords = {
 };
 
 type SocketCollectionItem = {
+    id: string;
     userId: string;
     coords?: Coords;
 };
@@ -57,7 +58,7 @@ class SocketsCollection {
     }
 
     setSocket(socketId: string, data: Partial<SocketCollectionItem>) {
-        this.sockets[socketId] = { ...this.sockets[socketId], ...data };
+        this.sockets[socketId] = { ...this.sockets[socketId], ...data, id: socketId };
     }
 
     remove(socketId: string) {
@@ -101,15 +102,16 @@ io.on('connection', (socket: Socket) => {
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
 
-        const socketsIds = Array.from(io.sockets.sockets.keys());
-        const othersSocketsIds = socketsIds.filter((id) => id !== socket.id);
+        const allSocketsIds = Array.from(io.sockets.sockets.keys());
+        const othersSocketsIds = allSocketsIds.filter((s) => s !== socket.id);
+        const socketsAround = sockets.getMany(...othersSocketsIds).filter((s) => isInnerRadius(data.coords, s?.coords));
 
-        const usersAroundPromises = sockets
-            .getMany(...othersSocketsIds)
-            .filter((s) => isInnerRadius(data.coords, s?.coords))
-            .map((s) => User.findOne(s?.userId));
+        const usersAroundPromises = socketsAround.map((s) => User.findOne(s?.userId));
         const usersAround = await Promise.all(usersAroundPromises);
+        socket.emit(SocketEvents.PreviousAroundUsers, { users: usersAround });
 
-        socket.emit(SocketEvents.AroundUsers, { users: usersAround });
+        const user = await User.findOne(data.userId);
+        if (!user) return;
+        io.to(socketsAround.map((s) => String(s?.id))).emit(SocketEvents.NewUser, { user });
     }
 });

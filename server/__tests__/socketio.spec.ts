@@ -42,14 +42,13 @@ describe('Testing socket.io', () => {
         await startHTTPServer();
     });
 
-    it('should receive users around of 5km after connect', async (done) => {
+    it('should receive previous users around of 5km after connect', async (done) => {
         const client1 = await createClientWithUser(COORDS_1);
         const client2 = await createClientWithUser(COORDS_2);
         const client3 = await createClientWithUser(COORDS_OUT_RANGE);
 
         const client4 = await createClientWithUser(COORDS_3);
-        client4.socket.on(SocketEvents.AroundUsers, (data: AroundUsersData) => {
-            console.log('Receive: ', data);
+        client4.socket.on(SocketEvents.PreviousAroundUsers, (data: AroundUsersData) => {
             expect(data.users).toHaveLength(2);
             expect(data.users).toEqual(expect.arrayContaining([expectUserObject()]));
 
@@ -68,10 +67,29 @@ describe('Testing socket.io', () => {
         }
     });
 
+    it('should receive new user around 5km after it connect', async (done) => {
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+
+        client1.socket.on(SocketEvents.NewUser, ({ user }: any) => {
+            expect(user).toEqual(expectUserObject(client2.user));
+            done();
+            client1.socket.close();
+            client2.socket.close();
+        });
+    });
+
     afterAll(() => {
         httpServer.close();
     });
 });
+
+function expectUserObject(user?: User) {
+    return expect.objectContaining({
+        id: user ? user.id : expect.any(String),
+        username: user ? user.username : expect.any(String),
+    });
+}
 
 type AroundUsersData = {
     users: any[];
