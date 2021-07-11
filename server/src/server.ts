@@ -1,15 +1,15 @@
 import app from './app';
 import http from 'http';
-import { createConnection } from 'typeorm';
 import { Server, Socket } from 'socket.io';
+import User from './entities/User';
 
-const httpServer = http.createServer(app);
+export const httpServer = http.createServer(app);
 
 export enum SocketEvents {
     NewLocation = 'new-location',
     NewUser = 'new-user',
     UserDisconnected = 'user-disconnected',
-    PreviousUsers = 'previous-users',
+    AroundUsers = 'around-users',
     RequestShareLocation = 'request-share-location',
     ReceiveShareLocationRequest = 'receive-share-location-request',
     AcceptShareLocationRequest = 'accept-share-location-request',
@@ -27,44 +27,18 @@ export const io = new Server(httpServer, {
     },
 });
 
-type User = {
-    id: string;
-    username: string;
-    room?: string;
-};
-
-type Coords = {
+export type Coords = {
     latitude: number;
     longitude: number;
 };
 
 type SocketCollectionItem = {
-    user: User;
-    coords: Coords | null;
-    lastTimeUpdatedCoords?: number;
+    userId: string;
+    coords?: Coords;
 };
 
 type SocketsCollectionData = {
     [key: string]: SocketCollectionItem;
-};
-
-type NewUserPayload = {
-    user: User;
-    coords: Coords;
-};
-
-type ShareLocationRequest = {
-    socketIdSource: string;
-    socketIdRequested: string;
-};
-
-type NewShareLocationData = {
-    room: string;
-    coords: Coords;
-};
-
-type StopLocationSharingPayload = {
-    room: string;
 };
 
 class SocketsCollection {
@@ -78,7 +52,7 @@ class SocketsCollection {
         return this.sockets[socketId];
     }
 
-    getMany(...socketIds: string[]) {
+    getMany(...socketIds: string[]): (undefined | SocketCollectionItem)[] {
         return socketIds.map((id) => this.sockets[id]);
     }
 
@@ -95,15 +69,47 @@ class SocketsCollection {
     }
 }
 
+type NewUserData = {
+    userId: string;
+    coords?: Coords;
+};
+
 const sockets = new SocketsCollection();
 
-io.on('connection', (socket: Socket) => {});
+function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean {
+    if (!center || !other) return false;
+    return calculate(other) <= radiusInKm;
 
-async function bootstrap() {
-    await createConnection();
-    httpServer.listen(3333, '0.0.0.0', () => {
-        console.log('Serving http://0.0.0.0:3333');
-    });
+    function calculate(coords: Coords) {
+        const { latitude, longitude } = coords;
+        center = center as Coords;
+
+        const factor = 0.0175;
+        const sin = Math.sin(latitude * factor) * Math.sin(center.latitude * factor);
+        const cos =
+            Math.cos(latitude * factor) *
+            Math.cos(center.latitude * factor) *
+            Math.cos(center.longitude * factor - longitude * factor);
+        const acos = Math.acos(sin + cos);
+        return acos * 6371;
+    }
 }
 
-bootstrap();
+io.on('connection', (socket: Socket) => {
+    socket.on(SocketEvents.NewUser, handleNewUser);
+
+    async function handleNewUser(data: NewUserData) {
+        sockets.setSocket(socket.id, { ...data });
+
+        const socketsIds = Array.from(io.sockets.sockets.keys());
+        const othersSocketsIds = socketsIds.filter((id) => id !== socket.id);
+
+        const usersAroundPromises = sockets
+            .getMany(...othersSocketsIds)
+            .filter((s) => isInnerRadius(data.coords, s?.coords))
+            .map((s) => User.findOne(s?.userId));
+        const usersAround = await Promise.all(usersAroundPromises);
+
+        socket.emit(SocketEvents.AroundUsers, { users: usersAround });
+    }
+});

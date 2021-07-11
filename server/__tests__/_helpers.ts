@@ -6,6 +6,7 @@ import faker from 'faker';
 import { generateUserJWT } from '@app/helpers/jwt';
 import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import { FriendshipRequestStatus } from '@app/types';
+import { httpServer } from '@app/server';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();
@@ -49,4 +50,13 @@ export function createAuthorizationHeaderToUser(userId: string) {
 
 export function getTestFile(filename: string) {
     return path.resolve(__dirname, 'images', filename);
+}
+
+export async function startHTTPServer() {
+    return new Promise<void>((resolve) =>
+        httpServer.listen(3333, '0.0.0.0', () => {
+            console.log('Serving http://0.0.0.0:3333');
+            resolve();
+        })
+    );
 }
