@@ -6,7 +6,8 @@ import faker from 'faker';
 import { generateUserJWT } from '@app/helpers/jwt';
 import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import { FriendshipRequestStatus } from '@app/types';
-import { httpServer } from '@app/server';
+import { Coords, httpServer, SocketEvents } from '@app/server';
+import Client from 'socket.io-client';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();
@@ -59,4 +60,25 @@ export async function startHTTPServer() {
             resolve();
         })
     );
+}
+
+const CLIENT_IO_PATH = 'http://localhost:3333';
+
+export async function createClientWithUser(coords: Coords) {
+    const user = await createUser();
+    const socket = createSocketClient(user, coords);
+    return { user, socket: socket };
+
+    function createSocketClient(user: User, coords?: Coords) {
+        const socket = Client(CLIENT_IO_PATH);
+        socket.emit(SocketEvents.NewUser, { userId: user.id, coords });
+        return socket;
+    }
+}
+
+export function createRandomCoords(): Coords {
+    return {
+        latitude: Number(faker.address.latitude()),
+        longitude: Number(faker.address.longitude()),
+    };
 }

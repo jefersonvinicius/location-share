@@ -43,10 +43,12 @@ type SocketsCollectionData = {
 };
 
 class SocketsCollection {
-    sockets: SocketsCollectionData;
+    private sockets: SocketsCollectionData;
+    private io: Server;
 
-    constructor() {
+    constructor(io: Server) {
         this.sockets = {};
+        this.io = io;
     }
 
     get(socketId: string) {
@@ -55,6 +57,12 @@ class SocketsCollection {
 
     getMany(...socketIds: string[]): (undefined | SocketCollectionItem)[] {
         return socketIds.map((id) => this.sockets[id]);
+    }
+
+    getSocketsAroundOf(socketId: string, center?: Coords) {
+        const allSocketsIds = Array.from(io.sockets.sockets.keys());
+        const othersSocketsIds = allSocketsIds.filter((s) => s !== socketId);
+        return this.getMany(...othersSocketsIds).filter((s) => isInnerRadius(center, s?.coords));
     }
 
     setSocket(socketId: string, data: Partial<SocketCollectionItem>) {
@@ -75,7 +83,11 @@ type NewUserData = {
     coords?: Coords;
 };
 
-const sockets = new SocketsCollection();
+type NewLocationData = {
+    coords: Coords;
+};
+
+const sockets = new SocketsCollection(io);
 
 function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean {
     if (!center || !other) return false;
@@ -98,13 +110,12 @@ function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean
 
 io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
+    socket.on(SocketEvents.NewLocation, handleNewLocation);
 
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
 
-        const allSocketsIds = Array.from(io.sockets.sockets.keys());
-        const othersSocketsIds = allSocketsIds.filter((s) => s !== socket.id);
-        const socketsAround = sockets.getMany(...othersSocketsIds).filter((s) => isInnerRadius(data.coords, s?.coords));
+        const socketsAround = sockets.getSocketsAroundOf(socket.id, data.coords);
 
         const usersAroundPromises = socketsAround.map((s) => User.findOne(s?.userId));
         const usersAround = await Promise.all(usersAroundPromises);
@@ -113,5 +124,11 @@ io.on('connection', (socket: Socket) => {
         const user = await User.findOne(data.userId);
         if (!user) return;
         io.to(socketsAround.map((s) => String(s?.id))).emit(SocketEvents.NewUser, { user });
+    }
+
+    async function handleNewLocation(data: NewLocationData) {
+        sockets.setSocket(socket.id, { coords: data.coords });
+        const socketWithNewLocation = sockets.get(socket.id);
+        socket.broadcast.emit(SocketEvents.NewLocation, { coords: socketWithNewLocation.coords });
     }
 });

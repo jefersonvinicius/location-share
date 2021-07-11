@@ -1,9 +1,6 @@
 import User from '@app/entities/User';
 import { Coords, httpServer, SocketEvents } from '@app/server';
-import Client from 'socket.io-client';
-import { createUser, startHTTPServer } from './_helpers';
-
-const CLIENT_IO_PATH = 'http://localhost:3333';
+import { createClientWithUser, createRandomCoords, createUser, startHTTPServer } from './_helpers';
 
 const COORDS_1 = {
     latitude: -20.974215,
@@ -24,18 +21,6 @@ const COORDS_OUT_RANGE = {
     latitude: -21.025095,
     longitude: -46.139385,
 };
-
-function createSocketClient(user: User, coords?: Coords) {
-    const socket = Client(CLIENT_IO_PATH);
-    socket.emit(SocketEvents.NewUser, { userId: user.id, coords });
-    return socket;
-}
-
-async function createClientWithUser(coords: Coords) {
-    const user = await createUser();
-    const socket = createSocketClient(user, coords);
-    return { user, socket: socket };
-}
 
 describe('Testing socket.io', () => {
     beforeAll(async () => {
@@ -77,6 +62,22 @@ describe('Testing socket.io', () => {
             client1.socket.close();
             client2.socket.close();
         });
+    });
+
+    it('should receive new location from users around', async (done) => {
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+
+        const coords = createRandomCoords();
+
+        client1.socket.on(SocketEvents.NewLocation, ({ coords: newCoords }: any) => {
+            expect(newCoords).toMatchObject(coords);
+            done();
+            client1.socket.close();
+            client2.socket.close();
+        });
+
+        client2.socket.emit(SocketEvents.NewLocation, { coords });
     });
 
     afterAll(() => {
