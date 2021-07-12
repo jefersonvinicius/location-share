@@ -42,6 +42,7 @@ type SocketCollectionItem = {
     id: string;
     userId: string;
     coords?: Coords;
+    isBusy: boolean;
 };
 
 type SocketsCollectionData = {
@@ -72,7 +73,16 @@ class SocketsCollection {
     }
 
     setSocket(socketId: string, data: Partial<SocketCollectionItem>) {
-        this.sockets[socketId] = { ...this.sockets[socketId], ...data, id: socketId };
+        const previous = this.sockets[socketId] ?? { isBusy: false };
+        this.sockets[socketId] = { ...previous, ...data, id: socketId };
+    }
+
+    setSocketToBusy(socketId: string) {
+        this.sockets[socketId].isBusy = true;
+    }
+
+    setSocketToNotBusy(socketId: string) {
+        this.sockets[socketId].isBusy = false;
     }
 
     remove(socketId: string) {
@@ -118,6 +128,8 @@ function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean
     }
 }
 
+const DEFAULT_CALLBACK_FN = (_: any) => {};
+
 io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
     socket.on(SocketEvents.NewLocation, handleNewLocation);
@@ -143,10 +155,21 @@ io.on('connection', (socket: Socket) => {
         socket.broadcast.emit(SocketEvents.NewLocation, { coords: socketWithNewLocation.coords });
     }
 
-    async function handleRequestShareLocation(data: RequestShareLocationData, callback: any) {
-        const socketData = sockets.get(socket.id);
-        const user = await User.findOne(socketData.userId);
+    async function handleRequestShareLocation(data: RequestShareLocationData, callback = DEFAULT_CALLBACK_FN) {
+        const socketRequestedData = sockets.get(data.socketId);
+        const socketRequestingData = sockets.get(socket.id);
+
+        if (socketRequestedData.isBusy) {
+            callback({ requestStatus: RequestShareLocationStatus.UserBusy });
+            return;
+        }
+
+        sockets.setSocketToBusy(socketRequestedData.id);
+        sockets.setSocketToBusy(socketRequestingData.id);
+
+        const user = await User.findOne(socketRequestingData.userId);
         socket.to(data.socketId).emit(SocketEvents.RequestShareLocation, { user });
+
         callback({ requestStatus: RequestShareLocationStatus.Requested });
     }
 });

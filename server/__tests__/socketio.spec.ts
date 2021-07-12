@@ -1,6 +1,6 @@
 import User from '@app/entities/User';
 import { httpServer, RequestShareLocationStatus, SocketEvents } from '@app/server';
-import { createClientWithUser, createRandomCoords, startHTTPServer } from './_helpers';
+import { createClientWithUser, createRandomCoords, delay, startHTTPServer } from './_helpers';
 
 const COORDS_1 = {
     latitude: -20.974215,
@@ -80,7 +80,7 @@ describe('Testing socket.io', () => {
         client2.socket.emit(SocketEvents.NewLocation, { coords });
     });
 
-    it.only('should send location share request successfully', async (done) => {
+    it('should send location share request successfully', async (done) => {
         expect.assertions(2);
         const client1 = await createClientWithUser(COORDS_1);
         const client2 = await createClientWithUser(COORDS_2);
@@ -93,6 +93,26 @@ describe('Testing socket.io', () => {
             done();
             client1.socket.close();
             client2.socket.close();
+        });
+    });
+
+    it('should send location share request with user busy', async (done) => {
+        expect.assertions(2);
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+        const client3 = await createClientWithUser(COORDS_3);
+        client1.socket.on(SocketEvents.RequestShareLocation, ({ user }) => {
+            expect(user.id).toBe(client2.user.id);
+        });
+
+        client2.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id });
+        await delay(0.5);
+        client3.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id }, (response: any) => {
+            expect(response.requestStatus).toBe(RequestShareLocationStatus.UserBusy);
+            done();
+            client1.socket.close();
+            client2.socket.close();
+            client3.socket.close();
         });
     });
 
