@@ -1,6 +1,6 @@
 import User from '@app/entities/User';
-import { Coords, httpServer, SocketEvents } from '@app/server';
-import { createClientWithUser, createRandomCoords, createUser, startHTTPServer } from './_helpers';
+import { httpServer, RequestShareLocationStatus, SocketEvents } from '@app/server';
+import { createClientWithUser, createRandomCoords, startHTTPServer } from './_helpers';
 
 const COORDS_1 = {
     latitude: -20.974215,
@@ -78,6 +78,22 @@ describe('Testing socket.io', () => {
         });
 
         client2.socket.emit(SocketEvents.NewLocation, { coords });
+    });
+
+    it.only('should send location share request successfully', async (done) => {
+        expect.assertions(2);
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+        client1.socket.on(SocketEvents.RequestShareLocation, ({ user }) => {
+            expect(user.id).toBe(client2.user.id);
+        });
+
+        client2.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id }, (response: any) => {
+            expect(response.requestStatus).toBe(RequestShareLocationStatus.Requested);
+            done();
+            client1.socket.close();
+            client2.socket.close();
+        });
     });
 
     afterAll(() => {

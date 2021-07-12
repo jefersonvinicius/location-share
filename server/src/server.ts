@@ -21,6 +21,12 @@ export enum SocketEvents {
     ShareLocationHasStopped = 'share-location-has-stopped',
 }
 
+export enum RequestShareLocationStatus {
+    Requested = 'requested',
+    AlreadySharing = 'already-sharing',
+    UserBusy = 'user-busy',
+}
+
 export const io = new Server(httpServer, {
     cors: {
         origin: '*',
@@ -87,6 +93,10 @@ type NewLocationData = {
     coords: Coords;
 };
 
+type RequestShareLocationData = {
+    socketId: string;
+};
+
 const sockets = new SocketsCollection(io);
 
 function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean {
@@ -111,6 +121,7 @@ function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean
 io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
     socket.on(SocketEvents.NewLocation, handleNewLocation);
+    socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
 
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
@@ -130,5 +141,12 @@ io.on('connection', (socket: Socket) => {
         sockets.setSocket(socket.id, { coords: data.coords });
         const socketWithNewLocation = sockets.get(socket.id);
         socket.broadcast.emit(SocketEvents.NewLocation, { coords: socketWithNewLocation.coords });
+    }
+
+    async function handleRequestShareLocation(data: RequestShareLocationData, callback: any) {
+        const socketData = sockets.get(socket.id);
+        const user = await User.findOne(socketData.userId);
+        socket.to(data.socketId).emit(SocketEvents.RequestShareLocation, { user });
+        callback({ requestStatus: RequestShareLocationStatus.Requested });
     }
 });
