@@ -8,6 +8,7 @@ import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import { FriendshipRequestStatus } from '@app/types';
 import { Coords, httpServer, SocketEvents } from '@app/server';
 import Client from 'socket.io-client';
+import { EventEmitter } from 'events';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();
@@ -83,6 +84,27 @@ export function createRandomCoords(): Coords {
     };
 }
 
+type ProcessFunction = (incrementCalls: () => void) => void;
+
+export function waitForCallbacks(amountCallbacks: number, process: ProcessFunction): Promise<void> {
+    const emitter = new EventEmitter();
+    return new Promise<void>((resolve) => {
+        let callbackHasCalled = 0;
+
+        emitter.on('callback-called', () => {
+            callbackHasCalled++;
+            if (callbackHasCalled === amountCallbacks) {
+                resolve();
+            }
+        });
+
+        function incrementCalls() {
+            emitter.emit('callback-called');
+        }
+
+        process(incrementCalls);
+    });
+}
 export async function delay(seconds = 1): Promise<void> {
     return new Promise((resolve) => {
         setTimeout(() => resolve(), seconds * 1000);

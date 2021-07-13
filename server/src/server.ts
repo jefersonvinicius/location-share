@@ -43,6 +43,7 @@ type SocketCollectionItem = {
     userId: string;
     coords?: Coords;
     isBusy: boolean;
+    isSharing: boolean;
 };
 
 type SocketsCollectionData = {
@@ -73,7 +74,7 @@ class SocketsCollection {
     }
 
     setSocket(socketId: string, data: Partial<SocketCollectionItem>) {
-        const previous = this.sockets[socketId] ?? { isBusy: false };
+        const previous = this.sockets[socketId] ?? { isBusy: false, isSharing: false };
         this.sockets[socketId] = { ...previous, ...data, id: socketId };
     }
 
@@ -83,6 +84,15 @@ class SocketsCollection {
 
     setSocketToNotBusy(socketId: string) {
         this.sockets[socketId].isBusy = false;
+    }
+
+    setSocketToSharing(socketId: string) {
+        this.sockets[socketId].isBusy = false;
+        this.sockets[socketId].isSharing = true;
+    }
+
+    setSocketToNotSharing(socketId: string) {
+        this.sockets[socketId].isSharing = false;
     }
 
     remove(socketId: string) {
@@ -104,6 +114,10 @@ type NewLocationData = {
 };
 
 type RequestShareLocationData = {
+    socketId: string;
+};
+
+type ShareLocationAcceptedData = {
     socketId: string;
 };
 
@@ -134,6 +148,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewUser, handleNewUser);
     socket.on(SocketEvents.NewLocation, handleNewLocation);
     socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
+    socket.on(SocketEvents.AcceptShareLocationRequest, handleShareLocationAccepted);
 
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
@@ -171,5 +186,14 @@ io.on('connection', (socket: Socket) => {
         socket.to(data.socketId).emit(SocketEvents.RequestShareLocation, { user });
 
         callback({ requestStatus: RequestShareLocationStatus.Requested });
+    }
+
+    async function handleShareLocationAccepted(data: ShareLocationAcceptedData) {
+        sockets.setSocketToSharing(data.socketId);
+        sockets.setSocketToSharing(socket.id);
+        const userThatAccepted = await User.findOne(sockets.get(socket.id).userId);
+        const userThatRequested = await User.findOne(sockets.get(data.socketId).userId);
+        io.to(socket.id).emit(SocketEvents.StartShareLocation, { user: userThatRequested });
+        io.to(data.socketId).emit(SocketEvents.StartShareLocation, { user: userThatAccepted });
     }
 });

@@ -1,6 +1,6 @@
 import User from '@app/entities/User';
 import { httpServer, RequestShareLocationStatus, SocketEvents } from '@app/server';
-import { createClientWithUser, createRandomCoords, delay, startHTTPServer } from './_helpers';
+import { createClientWithUser, createRandomCoords, delay, startHTTPServer, waitForCallbacks } from './_helpers';
 
 const COORDS_1 = {
     latitude: -20.974215,
@@ -114,6 +114,33 @@ describe('Testing socket.io', () => {
             client2.socket.close();
             client3.socket.close();
         });
+    });
+
+    it('should start new share location after accept it', async () => {
+        expect.assertions(3);
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+
+        client1.socket.on(SocketEvents.RequestShareLocation, ({ user }) => {
+            expect(user.id).toBe(client2.user.id);
+            client1.socket.emit(SocketEvents.AcceptShareLocationRequest, { socketId: client2.socket.id });
+        });
+
+        client2.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id });
+
+        await waitForCallbacks(2, (incrementCalls) => {
+            client1.socket.on(SocketEvents.StartShareLocation, ({ user }) => {
+                expect(user.id).toBe(client2.user.id);
+                incrementCalls();
+            });
+            client2.socket.on(SocketEvents.StartShareLocation, ({ user }) => {
+                expect(user.id).toBe(client1.user.id);
+                incrementCalls();
+            });
+        });
+
+        client1.socket.close();
+        client2.socket.close();
     });
 
     afterAll(() => {
