@@ -16,6 +16,7 @@ export enum SocketEvents {
     StartShareLocation = 'start-share-location',
     ShareLocationHasStarted = 'share-location-has-started',
     RejectShareLocationRequest = 'reject-share-location-request',
+    ShareLocationRequestWasRejected = 'share-location-request-was-rejected',
     NewLocationWhileSharing = 'new-location-while-sharing',
     StopLocationSharing = 'stop-location-sharing',
     ShareLocationHasStopped = 'share-location-has-stopped',
@@ -121,6 +122,10 @@ type ShareLocationAcceptedData = {
     socketId: string;
 };
 
+type ShareLocationRejectedData = {
+    socketId: string;
+};
+
 const sockets = new SocketsCollection(io);
 
 function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean {
@@ -149,6 +154,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.NewLocation, handleNewLocation);
     socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
     socket.on(SocketEvents.AcceptShareLocationRequest, handleShareLocationAccepted);
+    socket.on(SocketEvents.RejectShareLocationRequest, handleShareLocationRejected);
 
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
@@ -195,5 +201,11 @@ io.on('connection', (socket: Socket) => {
         const userThatRequested = await User.findOne(sockets.get(data.socketId).userId);
         io.to(socket.id).emit(SocketEvents.StartShareLocation, { user: userThatRequested });
         io.to(data.socketId).emit(SocketEvents.StartShareLocation, { user: userThatAccepted });
+    }
+
+    async function handleShareLocationRejected(data: ShareLocationRejectedData) {
+        sockets.setSocketToNotBusy(data.socketId);
+        sockets.setSocketToNotBusy(socket.id);
+        socket.to(data.socketId).emit(SocketEvents.ShareLocationRequestWasRejected, { socketId: socket.id });
     }
 });

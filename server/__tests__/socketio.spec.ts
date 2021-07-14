@@ -143,6 +143,25 @@ describe('Testing socket.io', () => {
         client2.socket.close();
     });
 
+    it('should reject share location request', async (done) => {
+        expect.assertions(2);
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+
+        client1.socket.on(SocketEvents.RequestShareLocation, ({ user }) => {
+            expect(user.id).toBe(client2.user.id);
+            client1.socket.emit(SocketEvents.RejectShareLocationRequest, { socketId: client2.socket.id });
+        });
+
+        client2.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id });
+        client2.socket.on(SocketEvents.ShareLocationRequestWasRejected, ({ socketId }) => {
+            expect(socketId).toBe(client1.socket.id);
+            done();
+            client1.socket.close();
+            client2.socket.close();
+        });
+    });
+
     afterAll(() => {
         httpServer.close();
     });
