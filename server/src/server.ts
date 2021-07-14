@@ -2,6 +2,7 @@ import app from './app';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 import User from './entities/User';
+import { v4 as uuid } from 'uuid';
 
 export const httpServer = http.createServer(app);
 
@@ -199,8 +200,13 @@ io.on('connection', (socket: Socket) => {
         sockets.setSocketToSharing(socket.id);
         const userThatAccepted = await User.findOne(sockets.get(socket.id).userId);
         const userThatRequested = await User.findOne(sockets.get(data.socketId).userId);
-        io.to(socket.id).emit(SocketEvents.StartShareLocation, { user: userThatRequested });
-        io.to(data.socketId).emit(SocketEvents.StartShareLocation, { user: userThatAccepted });
+
+        const roomID = createRoomID();
+        socket.join(roomID);
+        io.sockets.sockets.get(data.socketId)?.join(roomID);
+
+        io.to(socket.id).emit(SocketEvents.StartShareLocation, { user: userThatRequested, room: roomID });
+        io.to(data.socketId).emit(SocketEvents.StartShareLocation, { user: userThatAccepted, room: roomID });
     }
 
     async function handleShareLocationRejected(data: ShareLocationRejectedData) {
@@ -209,3 +215,7 @@ io.on('connection', (socket: Socket) => {
         socket.to(data.socketId).emit(SocketEvents.ShareLocationRequestWasRejected, { socketId: socket.id });
     }
 });
+
+function createRoomID() {
+    return `room-${uuid()}`;
+}
