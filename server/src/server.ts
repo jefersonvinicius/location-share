@@ -97,6 +97,17 @@ class SocketsCollection {
         this.sockets[socketId].isSharing = false;
     }
 
+    setSocketToAvailable(socketId: string) {
+        this.setSocketToNotBusy(socketId);
+        this.setSocketToNotSharing(socketId);
+    }
+
+    leaveFromRoom(socketIds: string[], room: string) {
+        socketIds.forEach((id) => {
+            this.io.sockets.sockets.get(id)?.leave(room);
+        });
+    }
+
     remove(socketId: string) {
         delete this.sockets[socketId];
     }
@@ -125,6 +136,10 @@ type ShareLocationAcceptedData = {
 
 type ShareLocationRejectedData = {
     socketId: string;
+};
+
+type StopShareLocationData = {
+    room: string;
 };
 
 const sockets = new SocketsCollection(io);
@@ -156,6 +171,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.RequestShareLocation, handleRequestShareLocation);
     socket.on(SocketEvents.AcceptShareLocationRequest, handleShareLocationAccepted);
     socket.on(SocketEvents.RejectShareLocationRequest, handleShareLocationRejected);
+    socket.on(SocketEvents.StopLocationSharing, handleStopLocationSharing);
 
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
@@ -213,6 +229,15 @@ io.on('connection', (socket: Socket) => {
         sockets.setSocketToNotBusy(data.socketId);
         sockets.setSocketToNotBusy(socket.id);
         socket.to(data.socketId).emit(SocketEvents.ShareLocationRequestWasRejected, { socketId: socket.id });
+    }
+
+    async function handleStopLocationSharing(data: StopShareLocationData) {
+        const roomSocketsIds = io.sockets.adapter.rooms.get(data.room);
+        roomSocketsIds?.forEach((socketId) => {
+            sockets.setSocketToAvailable(socketId);
+        });
+        io.to(data.room).emit(SocketEvents.ShareLocationHasStopped);
+        sockets.leaveFromRoom(Array.from(roomSocketsIds ?? []), data.room);
     }
 });
 

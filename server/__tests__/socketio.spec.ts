@@ -116,7 +116,7 @@ describe('Testing socket.io', () => {
         });
     });
 
-    it.only('should start new share location after accept it', async () => {
+    it('should start new share location after accept it', async () => {
         expect.assertions(5);
         const client1 = await createClientWithUser(COORDS_1);
         const client2 = await createClientWithUser(COORDS_2);
@@ -162,6 +162,42 @@ describe('Testing socket.io', () => {
             client1.socket.close();
             client2.socket.close();
         });
+    });
+
+    it.only('should be able stop share location', async () => {
+        expect.assertions(4);
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+
+        client2.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id });
+        client1.socket.on(SocketEvents.RequestShareLocation, ({ user }) => {
+            expect(user.id).toBe(client2.user.id);
+            client1.socket.emit(SocketEvents.AcceptShareLocationRequest, { socketId: client2.socket.id });
+        });
+
+        client2.socket.on(SocketEvents.StartShareLocation, ({ user, room }) => {
+            expect(user.id).toBe(client1.user.id);
+            stopSharingLocationAfterDelay(room);
+        });
+
+        await waitForCallbacks(2, (incrementCalls) => {
+            client1.socket.on(SocketEvents.ShareLocationHasStopped, () => {
+                expect(true).toBeTruthy();
+                incrementCalls();
+            });
+            client2.socket.on(SocketEvents.ShareLocationHasStopped, () => {
+                expect(true).toBeTruthy();
+                incrementCalls();
+            });
+        });
+
+        client1.socket.close();
+        client2.socket.close();
+
+        async function stopSharingLocationAfterDelay(room: string) {
+            await delay(1);
+            client2.socket.emit(SocketEvents.StopLocationSharing, { room });
+        }
     });
 
     afterAll(() => {
