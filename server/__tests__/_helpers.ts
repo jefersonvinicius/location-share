@@ -6,9 +6,11 @@ import faker from 'faker';
 import { generateUserJWT } from '@app/helpers/jwt';
 import { FriendshipRequest } from '@app/entities/FriendshipRequest';
 import { FriendshipRequestStatus } from '@app/types';
-import { Coords, httpServer, SocketEvents } from '@app/server';
+import { httpServer } from '@app/server';
 import Client from 'socket.io-client';
 import { EventEmitter } from 'events';
+import { Coords } from '@app/helpers/geolocation';
+import { SocketEvents } from '@app/controllers/SocketHandlersController/SocketEvents';
 
 export async function setupDatabaseTest() {
     const options = await getConnectionOptions();

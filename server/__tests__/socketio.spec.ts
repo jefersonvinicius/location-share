@@ -1,5 +1,6 @@
+import { RequestShareLocationStatus, SocketEvents } from '@app/controllers/SocketHandlersController/SocketEvents';
 import User from '@app/entities/User';
-import { httpServer, RequestShareLocationStatus, SocketEvents } from '@app/server';
+import { httpServer } from '@app/server';
 import { createClientWithUser, createRandomCoords, delay, startHTTPServer, waitForCallbacks } from './_helpers';
 
 const COORDS_1 = {
