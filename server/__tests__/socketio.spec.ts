@@ -164,7 +164,7 @@ describe('Testing socket.io', () => {
         });
     });
 
-    it.only('should be able stop share location', async () => {
+    it('should be able stop share location', async () => {
         expect.assertions(4);
         const client1 = await createClientWithUser(COORDS_1);
         const client2 = await createClientWithUser(COORDS_2);
@@ -197,6 +197,51 @@ describe('Testing socket.io', () => {
         async function stopSharingLocationAfterDelay(room: string) {
             await delay(1);
             client2.socket.emit(SocketEvents.StopLocationSharing, { room });
+        }
+    });
+
+    it('should be able send new location to user in sharing location', async () => {
+        expect.assertions(6);
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+        const coordsWillBeEmitted = createRandomCoords();
+
+        client2.socket.emit(SocketEvents.RequestShareLocation, { socketId: client1.socket.id });
+        client1.socket.on(SocketEvents.RequestShareLocation, ({ user }) => {
+            expect(user.id).toBe(client2.user.id);
+            client1.socket.emit(SocketEvents.AcceptShareLocationRequest, { socketId: client2.socket.id });
+        });
+
+        client2.socket.on(SocketEvents.StartShareLocation, ({ user, room }) => {
+            expect(user.id).toBe(client1.user.id);
+            shareNewLocation(room);
+        });
+
+        await waitForCallbacks(2, (incrementCalls) => {
+            client1.socket.on(SocketEvents.NewLocationWhileSharing, ({ socketIdOrigin, coords }) => {
+                expect(socketIdOrigin).toBe(client2.socket.id);
+                expect(coords).toMatchObject({
+                    latitude: coordsWillBeEmitted.latitude,
+                    longitude: coordsWillBeEmitted.longitude,
+                });
+                incrementCalls();
+            });
+            client2.socket.on(SocketEvents.NewLocationWhileSharing, ({ socketIdOrigin, coords }) => {
+                expect(socketIdOrigin).toBe(client2.socket.id);
+                expect(coords).toMatchObject(coordsWillBeEmitted);
+                incrementCalls();
+            });
+        });
+
+        client1.socket.close();
+        client2.socket.close();
+
+        async function shareNewLocation(room: string) {
+            await delay(1);
+            client2.socket.emit(SocketEvents.NewLocationWhileSharing, {
+                coords: coordsWillBeEmitted,
+                room: room,
+            });
         }
     });
 

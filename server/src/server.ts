@@ -142,6 +142,11 @@ type StopShareLocationData = {
     room: string;
 };
 
+type NewLocationWhileSharingData = {
+    coords: Coords;
+    room: string;
+};
+
 const sockets = new SocketsCollection(io);
 
 function isInnerRadius(center?: Coords, other?: Coords, radiusInKm = 5): boolean {
@@ -172,6 +177,7 @@ io.on('connection', (socket: Socket) => {
     socket.on(SocketEvents.AcceptShareLocationRequest, handleShareLocationAccepted);
     socket.on(SocketEvents.RejectShareLocationRequest, handleShareLocationRejected);
     socket.on(SocketEvents.StopLocationSharing, handleStopLocationSharing);
+    socket.on(SocketEvents.NewLocationWhileSharing, handleNewLocationWhileSharing);
 
     async function handleNewUser(data: NewUserData) {
         sockets.setSocket(socket.id, { ...data });
@@ -238,6 +244,13 @@ io.on('connection', (socket: Socket) => {
         });
         io.to(data.room).emit(SocketEvents.ShareLocationHasStopped);
         sockets.leaveFromRoom(Array.from(roomSocketsIds ?? []), data.room);
+    }
+
+    async function handleNewLocationWhileSharing(data: NewLocationWhileSharingData) {
+        io.to(data.room).emit(SocketEvents.NewLocationWhileSharing, {
+            socketIdOrigin: socket.id,
+            coords: data.coords,
+        });
     }
 });
 
