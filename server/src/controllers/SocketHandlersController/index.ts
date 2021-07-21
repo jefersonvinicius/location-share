@@ -22,6 +22,7 @@ export default class SocketHandlersController {
             socket.on(SocketEvents.RejectShareLocationRequest, this.handleShareLocationRejected(socket));
             socket.on(SocketEvents.StopLocationSharing, this.handleStopLocationSharing(socket));
             socket.on(SocketEvents.NewLocationWhileSharing, this.handleNewLocationWhileSharing(socket));
+            socket.on('disconnect', this.createUserDisconnectedHandler(socket));
         });
     }
 
@@ -110,6 +111,13 @@ export default class SocketHandlersController {
                 socketIdOrigin: socket.id,
                 coords: data.coords,
             });
+        };
+    }
+
+    private createUserDisconnectedHandler(socket: Socket) {
+        return () => {
+            socket.broadcast.emit(SocketEvents.UserDisconnected, { socketId: socket.id });
+            this.sockets.remove(socket.id);
         };
     }
 }

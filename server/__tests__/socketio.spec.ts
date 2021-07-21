@@ -53,6 +53,27 @@ describe('Testing socket.io', () => {
         }
     });
 
+    it('should receive user disconnected', async (done) => {
+        const client1 = await createClientWithUser(COORDS_1);
+        const client2 = await createClientWithUser(COORDS_2);
+
+        await waitForCallbacks(1, (incrementCalls) => {
+            // Wait for socket connection to stablish
+            client2.socket.on('connect', () => incrementCalls());
+        });
+
+        const holdClient2SocketId = client2.socket.id;
+
+        client1.socket.on(SocketEvents.UserDisconnected, ({ socketId }) => {
+            expect(socketId).toBe(holdClient2SocketId);
+            done();
+            client1.socket.close();
+            client2.socket.close();
+        });
+
+        client2.socket.disconnect();
+    });
+
     it('should receive new user around 5km after it connect', async (done) => {
         const client1 = await createClientWithUser(COORDS_1);
         const client2 = await createClientWithUser(COORDS_2);
