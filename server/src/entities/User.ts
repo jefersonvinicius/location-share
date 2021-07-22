@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
     BaseEntity,
     Column,
@@ -19,6 +20,7 @@ class User extends BaseEntity {
     @Column({ unique: true })
     username: string;
 
+    @Exclude()
     @Column()
     password: string;
 
@@ -36,7 +38,7 @@ class User extends BaseEntity {
     friends: User[];
 
     @OneToMany(() => FriendshipRequest, (request) => request.user)
-    friendshipRequests: FriendshipRequest[]
+    friendshipRequests: FriendshipRequest[];
 }
 
 export default User;
